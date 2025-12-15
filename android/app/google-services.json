@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "858660360344",
+    "project_id": "cinemarathi-3fcf0",
+    "storage_bucket": "cinemarathi-3fcf0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858660360344:android:5e3b97da5d47c4f8c600ed",
+        "android_client_info": {
+          "package_name": "com.sumit.cinemarathi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACJxHiBkBhvyO3SsxXwTr0a0-4yrpT9eE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
