@@ -8,15 +8,15 @@ import 'package:school_management/authentication_module/view/cine_profile.dart';
 import 'package:school_management/authentication_module/view/discover_screen.dart';
 import 'package:school_management/authentication_module/view/home_view.dart';
 import 'package:school_management/authentication_module/view/jobs_screen.dart';
-import 'package:school_management/authentication_module/view/talent_public_profile.dart';
 import 'package:school_management/constants.dart';
+import 'package:school_management/utils/components/cached_image_network_container.dart';
 import 'package:school_management/utils/constants/app_box_decoration.dart';
 import 'package:school_management/utils/constants/app_colors.dart';
 import 'package:school_management/utils/constants/asset_paths.dart';
 import 'package:school_management/utils/navigation/go_paths.dart';
 import 'package:school_management/utils/navigation/navigator.dart';
 
-final _getDashboardController = Get.put(ClientDashboardController());
+import '../controller/cine_profile_controller.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -33,12 +33,52 @@ class _LandingPageState extends State<LandingPage> {
 
   List<Widget> screens = [];
 
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //
+  //   _getDashboardController.getClientDashboardDetails();
+  //   _profileController.fetchFullProfile();
+  //
+  //   screens = [
+  //     HomeView(
+  //       onTap: () {
+  //         _scaffoldKey.currentState?.openDrawer();
+  //       },
+  //     ),
+  //     DiscoverTalentsScreen(),
+  //     TalentPublicProfileScreen(),
+  //     // NetworkScreen(),
+  //     // NotificationsScreen(),
+  //     DiscoverJobsScreen(
+  //       onTap: () {
+  //         onNavTap(0);
+  //       },
+  //     ),
+  //
+  //     ProfileScreen(
+  //       onTap: () {
+  //         onNavTap(0);
+  //       },
+  //     ),
+  //   ];
+  // }
+
+  late final ProfileController _profileController;
+  late final ClientDashboardController _dashboardController;
+
   @override
   void initState() {
     super.initState();
 
-    _getDashboardController.getClientDashboardDetails();
+    _profileController = Get.put(ProfileController());
+    _dashboardController = Get.put(ClientDashboardController());
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dashboardController.getClientDashboardDetails();
+      _profileController.fetchFullProfile();
+    });
     screens = [
       HomeView(
         onTap: () {
@@ -46,15 +86,12 @@ class _LandingPageState extends State<LandingPage> {
         },
       ),
       DiscoverTalentsScreen(),
-      TalentPublicProfileScreen(),
-      // NetworkScreen(),
-      // NotificationsScreen(),
+      // TalentPublicProfileScreen(),
       DiscoverJobsScreen(
         onTap: () {
           onNavTap(0);
         },
       ),
-
       ProfileScreen(
         onTap: () {
           onNavTap(0);
@@ -108,9 +145,9 @@ class _LandingPageState extends State<LandingPage> {
           children: [
             _navItem(icon: Icons.home, label: "Home", index: 0),
             _navItem(icon: Icons.explore, label: "Explore", index: 1),
-            _navItem(icon: Icons.chat_bubble_outline, label: "Chat", index: 2),
-            _navItem(icon: Icons.work_outline, label: "Jobs", index: 3),
-            _navItem(icon: Icons.person_outline, label: "Profile", index: 4),
+            // _navItem(icon: Icons.chat_bubble_outline, label: "Chat", index: 2),
+            _navItem(icon: Icons.work_outline, label: "Jobs", index: 2),
+            _navItem(icon: Icons.person_outline, label: "Profile", index: 3),
           ],
         ),
       ),
@@ -135,7 +172,6 @@ class _LandingPageState extends State<LandingPage> {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             margin: EdgeInsets.only(
-
               left: 12,
               right: MediaQuery.of(context).size.width * 0.24,
               top: 24,
@@ -157,21 +193,32 @@ class _LandingPageState extends State<LandingPage> {
                   children: [
                     SizedBox(width: 10),
 
-                    Container(
-                      width: 50,
-                      height: 50,
-                      // padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [Colors.pink, Colors.purple]),
-                      ),
-                      child: ClipOval(
-                        child: Image.network(
-                          "https://avatars.githubusercontent.com/u/111274627?v=4",
-                          fit: BoxFit.cover,
+                    Obx(() {
+                      if (_profileController.isLoading.value) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.pinkAccent),
+                        );
+                      }
+
+                      final p = _profileController.profile;
+                      return Container(
+                        width: 50,
+                        height: 50,
+                        clipBehavior: Clip.hardEdge,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: [Colors.pink, Colors.purple]),
                         ),
-                      ),
-                    ),
+                        child: CachedImageNetworkContainer(
+                          fit: BoxFit.cover,
+                          url: (p["avatar"] ?? "").toString().replaceAll(" ", ""),
+
+                          placeHolder: buildPlaceholder(name: "User", context: context),
+                        ),
+                        // child: ,
+                      );
+                    }),
+
                     SizedBox(width: 10),
 
                     Column(
@@ -263,14 +310,53 @@ class _LandingPageState extends State<LandingPage> {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                   ),
                   onTap: () {
-                    // TODO: Implement logout
                     _scaffoldKey.currentState?.closeDrawer();
                     MyNavigator.pushNamed(GoPaths.support);
                   },
                 ),
+
+                const Divider(color: Colors.white24, height: 32),
+
+                ListTile(
+                  leading: const Icon(Icons.description_outlined, color: Colors.white, size: 30),
+                  title: Text(
+                    "Terms & Conditions",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  ),
+                  onTap: () {
+                    _scaffoldKey.currentState?.closeDrawer();
+                    MyNavigator.pushNamed(GoPaths.termsAndConditions);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined, color: Colors.white, size: 30),
+                  title: Text(
+                    "Privacy Policy",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  ),
+                  onTap: () {
+                    _scaffoldKey.currentState?.closeDrawer();
+                    MyNavigator.pushNamed(GoPaths.privacyPolicy);
+                  },
+                ),
+
+                const Divider(color: Colors.white24, height: 32),
+
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined, color: Colors.white, size: 30),
+                  title: Text(
+                    "Settings",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
+                  ),
+                  onTap: () {
+                    _scaffoldKey.currentState?.closeDrawer();
+                    MyNavigator.pushNamed(GoPaths.settings);
+                  },
+                ),
                 Spacer(),
 
-                _getDashboardController.obx((state) {
+                _dashboardController.obx((state) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: GlassPlanCard(

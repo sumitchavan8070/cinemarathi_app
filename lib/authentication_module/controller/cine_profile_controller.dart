@@ -2,13 +2,14 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:image_picker/image_picker.dart';
+import 'package:school_management/authentication_module/model/client_profile_model.dart';
 import 'package:school_management/constants.dart';
 import 'package:school_management/utils/components/core_messenger.dart';
 import 'package:school_management/utils/constants/core_prep_paths.dart';
 import 'package:school_management/utils/dio/api_end_points.dart';
 import 'package:school_management/utils/dio/api_request.dart';
 
-class ProfileController extends GetxController {
+class ProfileController extends GetxController  with StateMixin<ClientProfileModel>{
   // Observables
   RxBool isLoading = true.obs;
   RxBool isUploading = false.obs;
@@ -37,7 +38,7 @@ class ProfileController extends GetxController {
 
       if (res.statusCode == 200) {
         final responseData = res.data;
-        
+
         // Handle different response formats
         final dynamic status = responseData["status"];
         final bool isSuccess = status == true || status == 1 || status == "1";
@@ -80,7 +81,10 @@ class ProfileController extends GetxController {
       if (res.statusCode == 200) {
         final responseData = res.data;
         if (responseData["status"] == true || responseData["portfolio"] != null) {
-          portfolio.value = responseData["portfolio"] ?? [];
+          // API returns array of objects with id, url, imageUrl, index
+          final List<dynamic> portfolioList = responseData["portfolio"] ?? [];
+          portfolio.value = portfolioList;
+          portfolio.refresh(); // Notify listeners
         }
       }
     } catch (e) {
@@ -289,8 +293,17 @@ class ProfileController extends GetxController {
         return; // User cancelled
       }
 
-      // Check if adding these images would exceed limit
+      // Check if already at maximum limit
       final currentCount = portfolio.length;
+      if (currentCount >= 6) {
+        coreMessenger(
+          "Maximum 6 portfolio images allowed. You already have 6 images. Please delete one first.",
+          messageType: CoreScaffoldMessengerType.error,
+        );
+        return;
+      }
+
+      // Check if adding these images would exceed limit
       if (currentCount + pickedFiles.length > 6) {
         coreMessenger(
           "Cannot upload ${pickedFiles.length} images. You already have $currentCount images. Maximum 6 images allowed.",
@@ -348,7 +361,8 @@ class ProfileController extends GetxController {
           );
           return;
         }
-        await _uploadPortfolioFiles([pickedFile]);
+        // Use single image upload endpoint
+        await _uploadSinglePortfolioFile(pickedFile);
       }
     } catch (e) {
       print("SINGLE PORTFOLIO UPLOAD ERROR → $e");
@@ -356,6 +370,71 @@ class ProfileController extends GetxController {
         "Failed to upload portfolio image: ${e.toString()}",
         messageType: CoreScaffoldMessengerType.error,
       );
+    }
+  }
+
+  // -------------------------------------------------------------
+  // INTERNAL: UPLOAD SINGLE PORTFOLIO IMAGE
+  // -------------------------------------------------------------
+  Future<void> _uploadSinglePortfolioFile(XFile pickedFile) async {
+    try {
+      isUploading.value = true;
+
+      final file = File(pickedFile.path);
+      final fileName = pickedFile.path.split('/').last;
+
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path, filename: fileName),
+      });
+
+      // Upload single image using POST /api/portfolio/image
+      final res = await postRequest(
+        apiEndPoint: APIEndPoints.uploadSinglePortfolioImage,
+        postData: {},
+        formData: formData,
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final responseData = res.data;
+
+        // Handle success response - API returns status, message, image, total_images, portfolio
+        final dynamic status = responseData["status"];
+        final bool isSuccess = status == true ||
+            status == 1 ||
+            status == "1" ||
+            responseData["message"] != null;
+
+        if (isSuccess) {
+          // Refresh portfolio from API to get updated list
+          await fetchPortfolio();
+          // Also refresh full profile to sync
+          await fetchFullProfile();
+
+          coreMessenger(
+            responseData["message"] ?? "Portfolio image uploaded successfully",
+            messageType: CoreScaffoldMessengerType.success,
+          );
+        } else {
+          final errorMsg = responseData["error"] ??
+              responseData["message"] ??
+              "Failed to upload portfolio image";
+          coreMessenger(errorMsg, messageType: CoreScaffoldMessengerType.error);
+        }
+      } else {
+        final responseData = res.data;
+        final errorMsg = responseData["error"] ??
+            responseData["message"] ??
+            "Upload failed with status code: ${res.statusCode}";
+        coreMessenger(errorMsg, messageType: CoreScaffoldMessengerType.error);
+      }
+    } catch (e) {
+      print("SINGLE PORTFOLIO UPLOAD ERROR → $e");
+      coreMessenger(
+        "Failed to upload portfolio image: ${e.toString()}",
+        messageType: CoreScaffoldMessengerType.error,
+      );
+    } finally {
+      isUploading.value = false;
     }
   }
 
@@ -423,11 +502,11 @@ class ProfileController extends GetxController {
 
       // Create FormData with multiple files
       final formData = FormData();
-      
+
       for (var pickedFile in pickedFiles) {
         final file = File(pickedFile.path);
         final fileName = pickedFile.path.split('/').last;
-        
+
         formData.files.add(
           MapEntry(
             'files',
@@ -595,6 +674,62 @@ class ProfileController extends GetxController {
       print("UPDATE PROFILE ERROR → $e");
       coreMessenger(
         "Failed to update profile: ${e.toString()}",
+        messageType: CoreScaffoldMessengerType.error,
+      );
+    } finally {
+      isUploading.value = false;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // CHANGE PASSWORD
+  // -------------------------------------------------------------
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      isUploading.value = true;
+
+      final res = await postRequest(
+        apiEndPoint: APIEndPoints.changePassword,
+        postData: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final responseData = res.data;
+
+        final dynamic status = responseData["status"];
+        final bool isSuccess = status == true ||
+            status == 1 ||
+            status == "1" ||
+            responseData["success"] == true ||
+            responseData["success"] == 1;
+
+        if (isSuccess) {
+          coreMessenger(
+            responseData["message"] ?? "Password changed successfully",
+            messageType: CoreScaffoldMessengerType.success,
+          );
+        } else {
+          final errorMsg = responseData["error"] ??
+              responseData["message"] ??
+              "Failed to change password";
+          coreMessenger(errorMsg, messageType: CoreScaffoldMessengerType.error);
+        }
+      } else {
+        coreMessenger(
+          "Failed to change password. Please try again.",
+          messageType: CoreScaffoldMessengerType.error,
+        );
+      }
+    } catch (e) {
+      print("CHANGE PASSWORD ERROR → $e");
+      coreMessenger(
+        "Failed to change password: ${e.toString()}",
         messageType: CoreScaffoldMessengerType.error,
       );
     } finally {

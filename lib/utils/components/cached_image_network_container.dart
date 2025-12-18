@@ -42,28 +42,27 @@ class CachedImageNetworkContainer extends StatelessWidget {
             color: color ?? AppColors.white,
             borderRadius: borderRadius ?? 8,
           ),
-      // child: url != null || url?.isNotEmpty == true
-      //     ? CachedNetworkImage(
-      //         imageUrl: url!,
-      //         fit: fit,
-      //         placeholder: (context, url) {
-      //           return placeHolder;
-      //         },
-      //         errorWidget: (context, url, error) {
-      //           return placeHolder;
-      //         },
-      //       )
-      //     : placeHolder,
-
-      child: (url != null && url!.isNotEmpty)
+      child: url != null || url?.isNotEmpty == true
           ? CachedNetworkImage(
-        imageUrl: url!,
-        fit: fit,
-        placeholder: (context, url) => placeHolder,
-        errorWidget: (context, url, error) => placeHolder,
-      )
+              imageUrl: url!,
+              fit: fit,
+              placeholder: (context, url) {
+                return placeHolder;
+              },
+              errorWidget: (context, url, error) {
+                return placeHolder;
+              },
+            )
           : placeHolder,
 
+      // child: (url != null && url!.isNotEmpty)
+      //     ? CachedNetworkImage(
+      //   imageUrl: url!,
+      //   fit: fit,
+      //   placeholder: (context, url) => placeHolder,
+      //   errorWidget: (context, url, error) => placeHolder,
+      // )
+      //     : placeHolder,
     );
   }
 }

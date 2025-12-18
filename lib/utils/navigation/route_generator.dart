@@ -3,13 +3,18 @@ import 'package:go_router/go_router.dart';
 import 'package:school_management/authentication_module/view/cine_marathi_landing_view.dart';
 import 'package:school_management/authentication_module/view/edit_profile_view.dart';
 import 'package:school_management/authentication_module/view/prp_setup.dart';
+import 'package:school_management/authentication_module/view/sign_in_up_view.dart';
+import 'package:school_management/authentication_module/view/support_view.dart';
+import 'package:school_management/authentication_module/view/change_password_view.dart';
+import 'package:school_management/authentication_module/view/terms_and_conditions_view.dart';
+import 'package:school_management/authentication_module/view/privacy_policy_view.dart';
+import 'package:school_management/authentication_module/view/casting_calls_screen.dart';
+import 'package:school_management/authentication_module/view/settings_view.dart';
 import 'package:school_management/constants.dart';
 import 'package:school_management/payments/razorpay.dart';
 import 'package:school_management/utils/constants/core_prep_paths.dart';
 import 'package:school_management/utils/navigation/go_paths.dart';
 import 'package:school_management/utils/services/core_navigation_observer.dart';
-
-import '../../authentication_module/view/sign_in_up_view.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -77,6 +82,59 @@ final GoRouter goRouterConfig = GoRouter(
         return const EditProfileView(); // if you want a real splash, change this
       },
     ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.support,
+      name: GoPaths.support,
+      builder: (context, state) {
+        return const SupportView();
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.changePassword,
+      name: GoPaths.changePassword,
+      builder: (context, state) {
+        return const ChangePasswordView();
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.termsAndConditions,
+      name: GoPaths.termsAndConditions,
+      builder: (context, state) {
+        return const TermsAndConditionsView();
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.privacyPolicy,
+      name: GoPaths.privacyPolicy,
+      builder: (context, state) {
+        return const PrivacyPolicyView();
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.castingCalls,
+      name: GoPaths.castingCalls,
+      builder: (context, state) {
+        return CastingCallsScreen(
+          onTap: () {
+            // Navigate back
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: GoPaths.settings,
+      name: GoPaths.settings,
+      builder: (context, state) {
+        return const SettingsView();
+      },
+    ),
 
     // Auth Screen
     // GoRoute(
@@ -115,23 +173,6 @@ final GoRouter goRouterConfig = GoRouter(
       },
     ),
 
-    // Onboarding
-    // GoRoute(
-    //   parentNavigatorKey: rootNavigatorKey,
-    //   path: GoPaths.splash,
-    //   name: GoPaths.splash,
-    //   builder: (context, state) {
-    //     return const OnbodingScreen();
-    //   },
-    // ),
-
-    // Home / Landing page
-    // GoRoute(
-    //   parentNavigatorKey: rootNavigatorKey,
-    //   path: GoPaths.landingView,
-    //   name: GoPaths.landingView,
-    //   builder: (context, state) => LandingView(),
-    // ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: GoPaths.razorPayPayment,

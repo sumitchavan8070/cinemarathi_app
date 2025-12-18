@@ -3,11 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:school_management/authentication_module/controller/cine_profile_controller.dart';
 import 'package:school_management/authentication_module/controller/client_dashboard_controller.dart';
+import 'package:school_management/authentication_module/controller/casting_calls_controller.dart';
 import 'package:school_management/authentication_module/model/client_dashboard_details_model.dart';
+import 'package:school_management/constants.dart';
 import 'package:school_management/utils/components/cached_image_network_container.dart';
 import 'package:school_management/utils/constants/app_box_decoration.dart';
 import 'package:school_management/utils/constants/asset_paths.dart';
+import 'package:school_management/utils/constants/core_prep_paths.dart';
+import 'package:school_management/utils/navigation/go_paths.dart';
+import 'package:school_management/utils/navigation/navigator.dart';
+import 'package:get/get.dart';
+
+final ProfileController _profileController = Get.put(ProfileController());
 
 class HomeView extends StatelessWidget {
   final VoidCallback onTap;
@@ -18,6 +27,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return controller.obx(
       (state) => _buildBody(context, state),
       onLoading: const Scaffold(
@@ -88,21 +98,29 @@ class HomeView extends StatelessWidget {
                   ],
                 ),
 
-                // Avatar
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: [Colors.pink, Colors.purple]),
-                  ),
-                  child: const ClipOval(
-                    child: Image(
-                      fit: BoxFit.cover,
-                      image: NetworkImage("https://avatars.githubusercontent.com/u/111274627?v=4"),
+                Obx(() {
+                  if (_profileController.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.pinkAccent));
+                  }
+
+                  final p = _profileController.profile;
+                  return Container(
+                    width: 40,
+                    height: 40,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: [Colors.pink, Colors.purple]),
                     ),
-                  ),
-                ),
+                    child: CachedImageNetworkContainer(
+                      fit: BoxFit.cover,
+                      url: (p["avatar"] ?? "").toString().replaceAll(" ", ""),
+
+                      placeHolder: buildPlaceholder(name: "User", context: context),
+                    ),
+                    // child: ,
+                  );
+                }),
               ],
             ),
           ),
@@ -154,6 +172,10 @@ class HomeView extends StatelessWidget {
                       location: job.location ?? "-",
                     );
                   }),
+
+                  const SizedBox(height: 30),
+
+                  _buildCastingCallsSection(context),
 
                   const SizedBox(height: 40),
                 ],
@@ -267,6 +289,261 @@ class HomeView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildCastingCallsSection(BuildContext context) {
+    final castingController = Get.put(CastingCallsController());
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Casting Calls",
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+              GestureDetector(
+                onTap: () {
+                  MyNavigator.pushNamed(GoPaths.castingCalls);
+                },
+                child: const Text("See All >", style: TextStyle(color: Colors.purpleAccent)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 15),
+        Obx(() {
+          if (castingController.isLoading.value) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(color: Colors.pinkAccent),
+              ),
+            );
+          }
+          
+          // Show only active casting calls, limit to 3
+          final activeCalls = castingController.getActiveCastingCalls().take(3).toList();
+          final calls = activeCalls;
+          
+          if (calls.isEmpty) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Center(
+                child: Text(
+                  "No casting calls available",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            );
+          }
+          
+          return SizedBox(
+            height: 220,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              itemCount: calls.length,
+              itemBuilder: (context, index) {
+                final call = calls[index];
+                return _castingCallCard(context, call);
+              },
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _castingCallCard(BuildContext context, Map<String, dynamic> call) {
+    final projectTitle = call["project_title"] ?? "Casting Call";
+    final role = call["role"] ?? "Role";
+    final productionHouse = call["production_house_name"] ?? "Production";
+    final location = call["location"] ?? "Location";
+    final budgetValue = call["budget_per_day"];
+    final budget = _parseBudget(budgetValue);
+    final castingCallId = call["id"] ?? 0;
+    final castingController = Get.find<CastingCallsController>();
+    final isActive = castingController.isCastingCallActive(call);
+    
+    return GestureDetector(
+      onTap: () {
+        MyNavigator.pushNamed(GoPaths.castingCalls);
+      },
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 15),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Colors.pinkAccent, Colors.purple]),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.cast, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                projectTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isActive 
+                                    ? Colors.green.withOpacity(0.2)
+                                    : Colors.grey.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: isActive ? Colors.green : Colors.grey,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isActive ? "Active" : "Closed",
+                                    style: TextStyle(
+                                      color: isActive ? Colors.green : Colors.grey,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          productionHouse,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.purpleAccent.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                role,
+                style: const TextStyle(
+                  color: Colors.purpleAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    location,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.currency_rupee, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  "₹$budget/day",
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Colors.pinkAccent, Colors.purple]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                "View Details",
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _parseBudget(dynamic budget) {
+    try {
+      if (budget == null) return "0";
+      if (budget is num) {
+        return budget.toStringAsFixed(0);
+      }
+      if (budget is String) {
+        final parsed = double.tryParse(budget);
+        if (parsed != null) {
+          return parsed.toStringAsFixed(0);
+        }
+        return budget;
+      }
+      return budget.toString();
+    } catch (e) {
+      return "0";
+    }
   }
 }
 

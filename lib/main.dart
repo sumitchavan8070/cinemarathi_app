@@ -25,7 +25,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await GetStorage.init();
-
+  await CoreAppInfo().initialize();
   await initGlobalKeys(scaffoldMessengerKey, goRouterConfig);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessageOpenedApp.listen((message) {

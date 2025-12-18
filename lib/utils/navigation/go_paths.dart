@@ -47,6 +47,11 @@ class GoPaths {
   static const String createExamScreen = '/create-exam';
   static const String examResultScreen = '/exam-result';
   static const String support = '/support';
+  static const String termsAndConditions = '/terms-and-conditions';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String castingCalls = '/casting-calls';
+  static const String createCastingCall = '/create-casting-call';
+  static const String settings = '/settings';
 
 
   // setUP

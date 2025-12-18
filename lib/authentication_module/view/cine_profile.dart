@@ -24,7 +24,8 @@ class ProfileScreen extends StatelessWidget {
           onTap: onTap,
 
           child: Icon(Icons.arrow_back_ios, size: 20, color: Colors.white),
-        ),        title: Text(
+        ),
+        title: Text(
           "Profile",
           style: Theme.of(
             context,
@@ -136,7 +137,40 @@ class ProfileScreen extends StatelessWidget {
                   ],
 
                   // PORTFOLIO
-                  _sectionTitle("Portfolio"),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Portfolio",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (controller.portfolio.length >= 6)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                            ),
+                            child: Text(
+                              "6/6 Images",
+                              style: TextStyle(
+                                color: Colors.orange[300],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                   Center(child: _buildPortfolioGrid(controller.portfolio, context)),
 
                   const SizedBox(height: 30),
@@ -183,7 +217,6 @@ class ProfileScreen extends StatelessWidget {
     required String avatar,
     required bool isVerified,
   }) {
-    logger.i(avatar);
     return Container(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -408,9 +441,12 @@ class ProfileScreen extends StatelessWidget {
 
   // ================= PORTFOLIO GRID =================
   Widget _buildPortfolioGrid(List items, BuildContext context) {
+    final int currentCount = items.length;
+    final bool canAddMore = currentCount < 6;
+
     if (items.isEmpty) {
       return GestureDetector(
-        onTap: () => _showSinglePortfolioImageSourceDialog(context),
+        onTap: canAddMore ? () => _showSinglePortfolioImageSourceDialog(context) : null,
         child: Container(
           height: 200,
           margin: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -454,10 +490,8 @@ class ProfileScreen extends StatelessWidget {
       );
     }
 
-    // Show grid with add button if less than 6 images
-    final int totalSlots = 6;
-    final int currentCount = items.length;
-    final bool canAddMore = currentCount < totalSlots;
+    // Show grid with add button only if less than 6 images (strict check)
+    // canAddMore is already declared above
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -471,7 +505,7 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
-          // Show add button as last item if can add more
+          // Show add button as last item ONLY if can add more (less than 6 images)
           if (canAddMore && index == items.length) {
             return GestureDetector(
               onTap: () => _showSinglePortfolioImageSourceDialog(context),
@@ -500,10 +534,15 @@ class ProfileScreen extends StatelessWidget {
             );
           }
 
+          // If at 6 images, don't show add button (this should never execute due to itemCount check, but added for safety)
+          if (!canAddMore && index >= items.length) {
+            return const SizedBox.shrink();
+          }
+
           final item = items[index];
           final url = item["url"]?.toString() ?? item["imageUrl"]?.toString() ?? "";
           return GestureDetector(
-            onTap: () => _showPortfolioImageOptionsDialog(context, index + 1),
+            onTap: () => _showPortfolioImageOptionsDialog(context, index + 1, url),
             child: Stack(
               children: [
                 ClipRRect(
@@ -948,10 +987,11 @@ class ProfileScreen extends StatelessWidget {
   }
 
   // ================= PORTFOLIO IMAGE OPTIONS DIALOG =================
-  void _showPortfolioImageOptionsDialog(BuildContext context, int index) {
+  void _showPortfolioImageOptionsDialog(BuildContext context, int index, String imageUrl) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -962,17 +1002,6 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[600],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Title
                 const Padding(
                   padding: EdgeInsets.only(bottom: 20),
                   child: Text(
@@ -984,6 +1013,18 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // View Image option
+                _buildImageSourceOption(
+                  context,
+                  icon: Icons.visibility,
+                  title: "View Image",
+                  subtitle: "View image in full screen",
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showFullScreenImage(context, imageUrl, index);
+                  },
+                ),
+                const SizedBox(height: 12),
                 // Replace with Gallery
                 _buildImageSourceOption(
                   context,
@@ -1017,7 +1058,7 @@ class ProfileScreen extends StatelessWidget {
                   child: InkWell(
                     onTap: () {
                       Navigator.pop(context);
-                      controller.deletePortfolioImage(index);
+                      _showDeleteConfirmationDialog(context, index);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -1081,6 +1122,231 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  // ================= FULL SCREEN IMAGE VIEWER =================
+  void _showFullScreenImage(BuildContext context, String imageUrl, int index) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              // Full screen image
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: CachedImageNetworkContainer(
+                    fit: BoxFit.contain,
+                    url: imageUrl,
+                    placeHolder: buildPlaceholder(name: "Image", context: context),
+                  ),
+                ),
+              ),
+              // Close button (top right)
+              Positioned(
+                top: 40,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+              // Remove Image button (bottom center)
+              Positioned(
+                bottom: 40,
+                left: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Remove Image button
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // Close full screen
+                            _showDeleteConfirmationDialog(context, index);
+                          },
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          label: const Text("Remove Image"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Replace Image button
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // Close full screen
+                            _showReplaceImageOptions(context, index);
+                          },
+                          icon: const Icon(Icons.swap_horiz, size: 20),
+                          label: const Text("Replace"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purpleAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ================= REPLACE IMAGE OPTIONS =================
+  void _showReplaceImageOptions(BuildContext context, int index) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 20),
+                  child: Text(
+                    "Replace Image",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                _buildImageSourceOption(
+                  context,
+                  icon: Icons.photo_library,
+                  title: "Choose from Gallery",
+                  subtitle: "Select an image from your gallery",
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.uploadSinglePortfolioImage(
+                      source: ImageSource.gallery,
+                      index: index,
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildImageSourceOption(
+                  context,
+                  icon: Icons.camera_alt,
+                  title: "Take a Photo",
+                  subtitle: "Capture a new photo with camera",
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.uploadSinglePortfolioImage(source: ImageSource.camera, index: index);
+                  },
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[700]!),
+                        ),
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ================= DELETE CONFIRMATION DIALOG =================
+  void _showDeleteConfirmationDialog(BuildContext context, int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            "Delete Image",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "Are you sure you want to remove this image from your portfolio?",
+            style: TextStyle(color: Colors.grey),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.deletePortfolioImage(index);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Delete"),
+            ),
+          ],
         );
       },
     );

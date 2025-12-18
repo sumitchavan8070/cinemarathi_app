@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:school_management/authentication_module/controller/talents_controller.dart';
+import 'package:school_management/utils/components/cached_image_network_container.dart';
+import 'package:school_management/utils/constants/app_box_decoration.dart';
 
 class DiscoverTalentsScreen extends StatelessWidget {
   DiscoverTalentsScreen({super.key});
@@ -144,6 +145,7 @@ class DiscoverTalentsScreen extends StatelessWidget {
                         imageUrl:
                             t["image"].toString().replaceAll(" ", "") ??
                             "https://avatars.githubusercontent.com/u/111274627?v=4",
+                        context: context,
                       );
                     },
                   ),
@@ -181,6 +183,7 @@ class DiscoverTalentsScreen extends StatelessWidget {
     required String role,
     required String location,
     required String imageUrl,
+    required BuildContext context,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -191,15 +194,15 @@ class DiscoverTalentsScreen extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
-
-          // CircleAvatar(radius: 40, backgroundImage: NetworkImage(imageUrl)),
-          Container(
-            height: 80,
-            width: 80,
-            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-            child: Center(child: SvgPicture.network(imageUrl)),
+          Center(
+            child: CachedImageNetworkContainer(
+              height: 80,
+              width: 80,
+              decoration: AppBoxDecoration.getBoxDecoration(borderRadius: 100),
+              fit: BoxFit.cover,
+              url: imageUrl,
+              placeHolder: buildPlaceholder(name: name, context: context),
+            ),
           ),
           const SizedBox(height: 10),
 

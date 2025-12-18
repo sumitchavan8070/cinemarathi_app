@@ -42,7 +42,7 @@ class ClientLoginController extends GetxController with StateMixin<ClientLoginMo
       /// Update GetX State
       change(modal, status: RxStatus.success());
 
-      // return 0;
+
 
       // To store a user token
       corePrefs.write(CorePrepPaths.token, modal.token);

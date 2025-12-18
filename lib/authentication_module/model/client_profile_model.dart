@@ -1,9 +1,5 @@
 class ClientProfileModel {
-  ClientProfileModel({
-      this.status, 
-      this.message, 
-      this.profile, 
-      this.classroom,});
+  ClientProfileModel({this.status, this.message, this.profile, this.classroom});
 
   ClientProfileModel.fromJson(dynamic json) {
     status = json['status'];
@@ -11,6 +7,7 @@ class ClientProfileModel {
     profile = json['profile'] != null ? Profile.fromJson(json['profile']) : null;
     classroom = json['classroom'] != null ? Classroom.fromJson(json['classroom']) : null;
   }
+
   num? status;
   String? message;
   Profile? profile;
@@ -28,20 +25,17 @@ class ClientProfileModel {
     }
     return map;
   }
-
 }
 
 class Classroom {
-  Classroom({
-      this.id, 
-      this.name, 
-      this.schoolId,});
+  Classroom({this.id, this.name, this.schoolId});
 
   Classroom.fromJson(dynamic json) {
     id = json['id'];
     name = json['name'];
     schoolId = json['schoolId'];
   }
+
   num? id;
   String? name;
   num? schoolId;
@@ -53,19 +47,19 @@ class Classroom {
     map['schoolId'] = schoolId;
     return map;
   }
-
 }
 
 class Profile {
   Profile({
-      this.id, 
-      this.userId, 
-      this.fullName, 
-      this.gender, 
-      this.dob, 
-      this.address, 
-      this.phone, 
-      this.user,});
+    this.id,
+    this.userId,
+    this.fullName,
+    this.gender,
+    this.dob,
+    this.address,
+    this.phone,
+    this.user,
+  });
 
   Profile.fromJson(dynamic json) {
     id = json['id'];
@@ -77,6 +71,7 @@ class Profile {
     phone = json['phone'];
     user = json['user'] != null ? User.fromJson(json['user']) : null;
   }
+
   num? id;
   num? userId;
   String? fullName;
@@ -100,23 +95,23 @@ class Profile {
     }
     return map;
   }
-
 }
 
 class User {
   User({
-      this.id, 
-      this.username, 
-      this.email, 
-      this.password, 
-      this.roleId, 
-      this.schoolId, 
-      this.fcmToken, 
-      this.classes, 
-      this.leaves, 
-      this.salaries, 
-      this.role, 
-      this.school,});
+    this.id,
+    this.username,
+    this.email,
+    this.password,
+    this.roleId,
+    this.schoolId,
+    this.fcmToken,
+    this.classes,
+    this.leaves,
+    this.salaries,
+    this.role,
+    this.school,
+  });
 
   User.fromJson(dynamic json) {
     id = json['id'];
@@ -147,6 +142,7 @@ class User {
     role = json['role'] != null ? Role.fromJson(json['role']) : null;
     school = json['school'] != null ? School.fromJson(json['school']) : null;
   }
+
   num? id;
   String? username;
   String? email;
@@ -186,21 +182,21 @@ class User {
     }
     return map;
   }
-
 }
 
 class School {
   School({
-      this.id, 
-      this.name, 
-      this.code, 
-      this.address, 
-      this.phone, 
-      this.email, 
-      this.principalName, 
-      this.establishedYear, 
-      this.status, 
-      this.createdAt,});
+    this.id,
+    this.name,
+    this.code,
+    this.address,
+    this.phone,
+    this.email,
+    this.principalName,
+    this.establishedYear,
+    this.status,
+    this.createdAt,
+  });
 
   School.fromJson(dynamic json) {
     id = json['id'];
@@ -214,6 +210,7 @@ class School {
     status = json['status'];
     createdAt = json['createdAt'];
   }
+
   num? id;
   String? name;
   String? code;
@@ -239,18 +236,16 @@ class School {
     map['createdAt'] = createdAt;
     return map;
   }
-
 }
 
 class Role {
-  Role({
-      this.id, 
-      this.name,});
+  Role({this.id, this.name});
 
   Role.fromJson(dynamic json) {
     id = json['id'];
     name = json['name'];
   }
+
   num? id;
   String? name;
 
@@ -260,21 +255,21 @@ class Role {
     map['name'] = name;
     return map;
   }
-
 }
 
 class Salaries {
   Salaries({
-      this.id, 
-      this.staffId, 
-      this.month, 
-      this.year, 
-      this.baseSalary, 
-      this.bonus, 
-      this.deductions, 
-      this.totalSalary, 
-      this.schoolId, 
-      this.staffTableId,});
+    this.id,
+    this.staffId,
+    this.month,
+    this.year,
+    this.baseSalary,
+    this.bonus,
+    this.deductions,
+    this.totalSalary,
+    this.schoolId,
+    this.staffTableId,
+  });
 
   Salaries.fromJson(dynamic json) {
     id = json['id'];
@@ -288,6 +283,7 @@ class Salaries {
     schoolId = json['schoolId'];
     staffTableId = json['staffTableId'];
   }
+
   num? id;
   num? staffId;
   String? month;
@@ -313,20 +309,20 @@ class Salaries {
     map['staffTableId'] = staffTableId;
     return map;
   }
-
 }
 
 class Leaves {
   Leaves({
-      this.id, 
-      this.userId, 
-      this.startDate, 
-      this.endDate, 
-      this.reason, 
-      this.status, 
-      this.type, 
-      this.appliedOn, 
-      this.schoolId,});
+    this.id,
+    this.userId,
+    this.startDate,
+    this.endDate,
+    this.reason,
+    this.status,
+    this.type,
+    this.appliedOn,
+    this.schoolId,
+  });
 
   Leaves.fromJson(dynamic json) {
     id = json['id'];
@@ -339,6 +335,7 @@ class Leaves {
     appliedOn = json['appliedOn'];
     schoolId = json['schoolId'];
   }
+
   num? id;
   num? userId;
   String? startDate;
@@ -362,15 +359,10 @@ class Leaves {
     map['schoolId'] = schoolId;
     return map;
   }
-
 }
 
 class Classes {
-  Classes({
-      this.id, 
-      this.name, 
-      this.schoolId, 
-      this.classTeacherId,});
+  Classes({this.id, this.name, this.schoolId, this.classTeacherId});
 
   Classes.fromJson(dynamic json) {
     id = json['id'];
@@ -378,6 +370,7 @@ class Classes {
     schoolId = json['schoolId'];
     classTeacherId = json['classTeacherId'];
   }
+
   num? id;
   String? name;
   num? schoolId;
@@ -391,5 +384,4 @@ class Classes {
     map['classTeacherId'] = classTeacherId;
     return map;
   }
-
 }
